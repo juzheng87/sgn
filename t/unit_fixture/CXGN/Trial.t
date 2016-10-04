@@ -172,14 +172,17 @@ my $tn = CXGN::Trial->new( { bcs_schema => $f->bcs_schema(),
 				trial_id => $trial_id });
 
 my $traits_assayed  = $tn->get_traits_assayed();
+
+print STDERR Dumper($traits_assayed);
+
 my @traits_assayed_names;
 #print STDERR Dumper $traits_assayed;
 foreach (@$traits_assayed) {
-    push @traits_assayed_names, $_->[1];
+    push @traits_assayed_names, $_->[0]->[1];
 }
 @traits_assayed_names = sort @traits_assayed_names;
 #print STDERR Dumper \@traits_assayed_names;
-is_deeply(\@traits_assayed_names, ['Dry yield|CO:0000014', 'Root number counting|CO:0000011'], 'check traits assayed' );
+is_deeply(\@traits_assayed_names, ['Dry yield|CO:0000014', 'Root number counting|CO:0000011'], 'check trait names' );
 
 my @pheno_for_trait = $tn->get_phenotypes_for_trait(70727);
 my @pheno_for_trait_sorted = sort {$a <=> $b} @pheno_for_trait;
