@@ -23,7 +23,8 @@ my $phenotypes_search = CXGN::Phenotypes::SearchFactory->instantiate(
         phenotype_min_value=>$phenotype_min_value,
         phenotype_max_value=>$phenotype_max_value,
         limit=>$limit,
-        offset=>$offset
+        offset=>$offset,
+        include_design_info=>1
     }
 );
 my @data = $phenotypes_search->search();
@@ -121,6 +122,12 @@ has 'offset' => (
     is => 'rw'
 );
 
+has 'include_design_info' => (
+    isa => 'Bool|Undef',
+    is => 'ro',
+    default => 1
+);
+
 sub search {
     my $self = shift;
     my $schema = $self->bcs_schema();
@@ -161,8 +168,12 @@ sub search {
              JOIN phenotype USING(phenotype_id)",
     );
 
-    my $select_clause = "SELECT ".$columns{'year_id'}.", ".$columns{'trial_name'}.", ".$columns{'accession_name'}.", ".$columns{'location_name'}.", ".$columns{'trait_name'}.", ".$columns{'phenotype_value'}.", ".$columns{'plot_name'}.",
-          rep.value, block_number.value, plot_number.value, ".$columns{'trait_id'}.", ".$columns{'trial_id'}.", ".$columns{'location_id'}.", ".$columns{'accession_id'}.", ".$columns{'plot_id'}.", phenotype.uniquename, ".$columns{'trial_design'}.", ".$columns{'plot_type'}.", phenotype.phenotype_id, count(phenotype.phenotype_id) OVER() AS full_count";
+    my $select_clause;
+    if ($self->include_design_info){
+        $select_clause = "SELECT ".$columns{'year_id'}.", ".$columns{'trial_name'}.", ".$columns{'accession_name'}.", ".$columns{'location_name'}.", ".$columns{'trait_name'}.", ".$columns{'phenotype_value'}.", ".$columns{'plot_name'}.", rep.value, block_number.value, plot_number.value, ".$columns{'trait_id'}.", ".$columns{'trial_id'}.", ".$columns{'location_id'}.", ".$columns{'accession_id'}.", ".$columns{'plot_id'}.", phenotype.uniquename, ".$columns{'trial_design'}.", ".$columns{'plot_type'}.", phenotype.phenotype_id, count(phenotype.phenotype_id) OVER() AS full_count";
+    } else {
+        $select_clause = "SELECT ".$columns{'trial_name'}.", ".$columns{'accession_name'}.", ".$columns{'location_name'}.", ".$columns{'trait_name'}.", ".$columns{'phenotype_value'}.", ".$columns{'plot_name'}.", ".$columns{'trait_id'}.", ".$columns{'trial_id'}.", ".$columns{'location_id'}.", ".$columns{'accession_id'}.", ".$columns{'plot_id'}.", phenotype.uniquename, ".$columns{'plot_type'}.", phenotype.phenotype_id, count(phenotype.phenotype_id) OVER() AS full_count";
+    }
 
     my $from_clause = $columns{'from_clause'};
 
@@ -241,17 +252,32 @@ sub search {
     $h->execute();
     my $result = [];
 
-    while (my ($year, $project_name, $stock_name, $location, $trait, $value, $plot_name, $rep, $block_number, $plot_number, $trait_id, $project_id, $location_id, $stock_id, $plot_id, $phenotype_uniquename, $design, $stock_type_name, $phenotype_id, $full_count) = $h->fetchrow_array()) {
-        my $timestamp_value;
-        if ($include_timestamp) {
-            my ($p1, $p2) = split /date: /, $phenotype_uniquename;
-            my ($timestamp, $p3) = split /  operator/, $p2;
-            if( $timestamp =~ m/(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})(\S)(\d{4})/) {
-                $timestamp_value = $timestamp;
+    if ($self->include_design_info){
+        while (my ($year, $project_name, $stock_name, $location, $trait, $value, $plot_name, $rep, $block_number, $plot_number, $trait_id, $project_id, $location_id, $stock_id, $plot_id, $phenotype_uniquename, $design, $stock_type_name, $phenotype_id, $full_count) = $h->fetchrow_array()) {
+            my $timestamp_value;
+            if ($include_timestamp) {
+                my ($p1, $p2) = split /date: /, $phenotype_uniquename;
+                my ($timestamp, $p3) = split /  operator/, $p2;
+                if( $timestamp =~ m/(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})(\S)(\d{4})/) {
+                    $timestamp_value = $timestamp;
+                }
             }
+            my $synonyms = $synonym_hash_lookup{$stock_name};
+            push @$result, [ $year, $project_name, $stock_name, $location, $trait, $value, $plot_name, $rep, $block_number, $plot_number, $trait_id, $project_id, $location_id, $stock_id, $plot_id, $timestamp_value, $synonyms, $design, $stock_type_name, $phenotype_id, $full_count ];
         }
-        my $synonyms = $synonym_hash_lookup{$stock_name};
-        push @$result, [ $year, $project_name, $stock_name, $location, $trait, $value, $plot_name, $rep, $block_number, $plot_number, $trait_id, $project_id, $location_id, $stock_id, $plot_id, $timestamp_value, $synonyms, $design, $stock_type_name, $phenotype_id, $full_count ];
+    } else {
+        while (my ($project_name, $stock_name, $location, $trait, $value, $plot_name, $trait_id, $project_id, $location_id, $stock_id, $plot_id, $phenotype_uniquename, $stock_type_name, $phenotype_id, $full_count) = $h->fetchrow_array()) {
+            my $timestamp_value;
+            if ($include_timestamp) {
+                my ($p1, $p2) = split /date: /, $phenotype_uniquename;
+                my ($timestamp, $p3) = split /  operator/, $p2;
+                if( $timestamp =~ m/(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})(\S)(\d{4})/) {
+                    $timestamp_value = $timestamp;
+                }
+            }
+            my $synonyms = $synonym_hash_lookup{$stock_name};
+            push @$result, [ $project_name, $stock_name, $location, $trait, $value, $plot_name, $trait_id, $project_id, $location_id, $stock_id, $plot_id, $timestamp_value, $synonyms, $stock_type_name, $phenotype_id, $full_count ];
+        }
     }
 
     print STDERR "Search End:".localtime."\n";

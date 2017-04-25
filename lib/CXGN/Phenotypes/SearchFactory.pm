@@ -23,7 +23,8 @@ my $phenotypes_search = CXGN::Phenotypes::SearchFactory->instantiate(
         phenotype_min_value=>$phenotype_min_value,
         phenotype_max_value=>$phenotype_max_value,
         limit=>$limit,
-        offset=>$offset
+        offset=>$offset,
+        include_design_info=>1
     }
 );
 my @data = $phenotypes_search->search();

@@ -22,7 +22,8 @@ my $phenotypes_search = CXGN::Phenotypes::PhenotypeMatrix->new(
 	phenotype_min_value=>$phenotype_min_value,
 	phenotype_max_value=>$phenotype_max_value,
 	limit=>$limit,
-	offset=>$offset
+	offset=>$offset,
+    include_design_info=>1
 );
 my @data = $phenotypes_search->get_phenotype_matrix();
 
@@ -127,89 +128,123 @@ has 'offset' => (
 	is => 'rw'
 );
 
+has 'include_design_info' => (
+    isa => 'Bool|Undef',
+    is => 'ro',
+    default => 1
+);
+
 sub get_phenotype_matrix {
 	my $self = shift;
 	
-	my $phenotypes_search = CXGN::Phenotypes::SearchFactory->instantiate(
-		$self->search_type,
-		{
-			bcs_schema=>$self->bcs_schema,
-			data_level=>$self->data_level,
-			trait_list=>$self->trait_list,
-			trial_list=>$self->trial_list,
-			year_list=>$self->year_list,
-			location_list=>$self->location_list,
-			accession_list=>$self->accession_list,
-			plot_list=>$self->plot_list,
-			plant_list=>$self->plant_list,
-			include_timestamp=>$self->include_timestamp,
-			trait_contains=>$self->trait_contains,
-			phenotype_min_value=>$self->phenotype_min_value,
-			phenotype_max_value=>$self->phenotype_max_value,
-			limit=>$self->limit,
-			offset=>$self->offset
-		}
-	);
+    my $phenotypes_search = CXGN::Phenotypes::SearchFactory->instantiate(
+        $self->search_type,
+        {
+            bcs_schema=>$self->bcs_schema,
+            data_level=>$self->data_level,
+            trait_list=>$self->trait_list,
+            trial_list=>$self->trial_list,
+            year_list=>$self->year_list,
+            location_list=>$self->location_list,
+            accession_list=>$self->accession_list,
+            plot_list=>$self->plot_list,
+            plant_list=>$self->plant_list,
+            include_timestamp=>$self->include_timestamp,
+            trait_contains=>$self->trait_contains,
+            phenotype_min_value=>$self->phenotype_min_value,
+            phenotype_max_value=>$self->phenotype_max_value,
+            limit=>$self->limit,
+            offset=>$self->offset,
+            include_design_info=>$self->include_design_info
+        }
+    );
 
-	my $data = $phenotypes_search->search();
-	#print STDERR Dumper $data;
-	my %plot_data;
-	my %traits;
-	my $include_timestamp = $self->include_timestamp;
+    my $data = $phenotypes_search->search();
+    #print STDERR Dumper $data;
+    my %plot_data;
+    my %traits;
+    my $include_timestamp = $self->include_timestamp;
 
-	print STDERR "No of lines retrieved: ".scalar(@$data)."\n";
-	print STDERR "Construct Pheno Matrix Start:".localtime."\n";
-	my @unique_plot_list = ();
-	my %seen_plots;
-	foreach my $d (@$data) {
+    print STDERR "No of lines retrieved: ".scalar(@$data)."\n";
+    print STDERR "Construct Pheno Matrix Start:".localtime."\n";
+    my @unique_plot_list = ();
+    my %seen_plots;
+    my @line;
 
-		my ($year, $project_name, $stock_name, $location, $cvterm, $value, $plot_name, $rep, $block_number, $plot_number, $trait_id, $project_id, $location_id, $stock_id, $plot_id, $timestamp_value, $synonyms, $design, $stock_type_name, $phenotype_id) = @$d;
+    if ($self->include_design_info){
+        foreach my $d (@$data) {
 
-		if ($cvterm){
-			if (!exists($seen_plots{$plot_id})) {
-				push @unique_plot_list, $plot_id;
-				$seen_plots{$plot_id} = 1;
-			}
- 
-			#my $cvterm = $trait."|".$cvterm_accession;
-			if ($include_timestamp && $timestamp_value) {
-				$plot_data{$plot_id}->{$cvterm} = "$value,$timestamp_value";
-			} else {
-				$plot_data{$plot_id}->{$cvterm} = $value;
-			}
-			my $synonym_string = $synonyms ? join ("," , @$synonyms) : '';
-			$plot_data{$plot_id}->{metadata} = [$year,$project_id,$project_name,$design,$location_id,$location,$stock_id,$stock_name,$synonym_string,$stock_type_name,$plot_id,$plot_name,$rep,$block_number,$plot_number];
-			$traits{$cvterm}++;
-		}
-	}
-	#print STDERR Dumper \%plot_data;
-	#print STDERR Dumper \%traits;
+            my ($year, $project_name, $stock_name, $location, $cvterm, $value, $plot_name, $rep, $block_number, $plot_number, $trait_id, $project_id, $location_id, $stock_id, $plot_id, $timestamp_value, $synonyms, $design, $stock_type_name, $phenotype_id) = @$d;
 
-	my @info = ();
-	my @line = ( 'studyYear', 'studyDbId', 'studyName', 'studyDesign', 'locationDbId', 'locationName', 'germplasmDbId', 'germplasmName', 'germplasmSynonyms', 'observationLevel', 'observationUnitDbId', 'observationUnitName', 'replicate', 'blockNumber', 'plotNumber' );
+            if ($cvterm){
+                if (!exists($seen_plots{$plot_id})) {
+                    push @unique_plot_list, $plot_id;
+                    $seen_plots{$plot_id} = 1;
+                }
+     
+                #my $cvterm = $trait."|".$cvterm_accession;
+                if ($include_timestamp && $timestamp_value) {
+                    $plot_data{$plot_id}->{$cvterm} = "$value,$timestamp_value";
+                } else {
+                    $plot_data{$plot_id}->{$cvterm} = $value;
+                }
+                my $synonym_string = $synonyms ? join ("," , @$synonyms) : '';
+                $plot_data{$plot_id}->{metadata} = [$year,$project_id,$project_name,$design,$location_id,$location,$stock_id,$stock_name,$synonym_string,$stock_type_name,$plot_id,$plot_name,$rep,$block_number,$plot_number];
+                $traits{$cvterm}++;
+            }
+        }
+        @line = ( 'studyYear', 'studyDbId', 'studyName', 'studyDesign', 'locationDbId', 'locationName', 'germplasmDbId', 'germplasmName', 'germplasmSynonyms', 'observationLevel', 'observationUnitDbId', 'observationUnitName', 'replicate', 'blockNumber', 'plotNumber' );
+    } else {
+        foreach my $d (@$data) {
 
-	# generate header line
-	#
-	my @sorted_traits = sort keys(%traits);
-	foreach my $trait (@sorted_traits) {
-		push @line, $trait;
-	}
-	push @info, \@line;
+            my ($project_name, $stock_name, $location, $cvterm, $value, $plot_name, $trait_id, $project_id, $location_id, $stock_id, $plot_id, $timestamp_value, $synonyms, $stock_type_name, $phenotype_id) = @$d;
 
-	#print STDERR Dumper \@unique_plot_list;
+            if ($cvterm){
+                if (!exists($seen_plots{$plot_id})) {
+                    push @unique_plot_list, $plot_id;
+                    $seen_plots{$plot_id} = 1;
+                }
+     
+                #my $cvterm = $trait."|".$cvterm_accession;
+                if ($include_timestamp && $timestamp_value) {
+                    $plot_data{$plot_id}->{$cvterm} = "$value,$timestamp_value";
+                } else {
+                    $plot_data{$plot_id}->{$cvterm} = $value;
+                }
+                my $synonym_string = $synonyms ? join ("," , @$synonyms) : '';
+                $plot_data{$plot_id}->{metadata} = [$project_id,$project_name,$location_id,$location,$stock_id,$stock_name,$synonym_string,$stock_type_name,$plot_id,$plot_name];
+                $traits{$cvterm}++;
+            }
+        }
+        @line = ( 'studyDbId', 'studyName', 'locationDbId', 'locationName', 'germplasmDbId', 'germplasmName', 'germplasmSynonyms', 'observationLevel', 'observationUnitDbId', 'observationUnitName' );
+    }
+    #print STDERR Dumper \%plot_data;
+    #print STDERR Dumper \%traits;
 
-	foreach my $p (@unique_plot_list) {
-		my @line = @{$plot_data{$p}->{metadata}};
+    my @info = ();
 
-		foreach my $trait (@sorted_traits) {
-			push @line, $plot_data{$p}->{$trait};
-		}
-		push @info, \@line;
-	}
+    # generate header line
+    #
+    my @sorted_traits = sort keys(%traits);
+    foreach my $trait (@sorted_traits) {
+        push @line, $trait;
+    }
+    push @info, \@line;
 
-	#print STDERR Dumper \@info;
-	print STDERR "Construct Pheno Matrix End:".localtime."\n";
-	return @info;
+    #print STDERR Dumper \@unique_plot_list;
+
+    foreach my $p (@unique_plot_list) {
+        my @line = @{$plot_data{$p}->{metadata}};
+
+        foreach my $trait (@sorted_traits) {
+            push @line, $plot_data{$p}->{$trait};
+        }
+        push @info, \@line;
+    }
+
+    #print STDERR Dumper \@info;
+    print STDERR "Construct Pheno Matrix End:".localtime."\n";
+    return @info;
 }
 
 1;
