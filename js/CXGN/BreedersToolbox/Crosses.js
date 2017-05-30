@@ -207,6 +207,7 @@ jQuery(document).ready(function($) {
             case 'biparental':
                 maternal = $("#maternal_parent").val();
                 paternal = $("#paternal_parent").val();
+                check_parents([maternal,paternal]);
                 break;
             case 'self':
                 var selfedParent = $("#selfed_parent").val();
@@ -287,6 +288,38 @@ jQuery(document).ready(function($) {
             return;
         }
         $("#upload_crosses_form").submit();
+    }
+
+    function check_parents(names) {
+        var parents = JSON.stringify(names);
+        console.log(parent);
+        jQuery.ajax({
+            type: 'POST',
+            url: '/ajax/accession_list/verify',
+            timeout: 36000000,
+            async: false,
+            dataType: "json",
+            data: {
+                'accession_list': parents,
+                'do_fuzzy_search': false,
+            },
+            beforeSend: function(){
+                //disable_ui();
+            },
+            success: function (response) {
+                //enable_ui();
+                if (response.error) {
+                    alert(response.error);
+                } else {
+                    console.log("response: "+JSON.stringify(response));
+                    return parents;
+                }
+            },
+            error: function () {
+                //enable_ui();
+                alert('An error occurred in processing. sorry');
+            }
+        });
     }
 
     function get_accession_names(accession_select_id) {
