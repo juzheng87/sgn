@@ -245,10 +245,73 @@ sub add_cross_POST :Args(0) {
     my $chado_schema = $c->dbic_schema('Bio::Chado::Schema', 'sgn_chado');
     my $cross_name = $c->req->param('cross_name');
     my $cross_type = $c->req->param('cross_type');
+    my $maternal = $c->req->param('maternal');
+    my $paternal = $c->req->param('paternal');
+    my $progeny_number = $c->req->param('progeny_number');
+    my $prefix = $c->req->param('prefix');
+    my $suffix = $c->req->param('suffix');
     my $breeding_program_id = $c->req->param('breeding_program_id');
     my $folder_name = $c->req->param('folder_name');
     my $folder_id = $c->req->param('folder_id');
     my $folder;
+
+    if (!$c->user()) {
+  print STDERR "User not logged in... not adding a cross.\n";
+  $c->stash->{rest} = {error => "You need to be logged in to add a cross." };
+  return;
+    }
+
+    if (!any { $_ eq "curator" || $_ eq "submitter" } ($c->user()->roles)  ) {
+  print STDERR "User does not have sufficient privileges.\n";
+  $c->stash->{rest} = {error =>  "you have insufficient privileges to add a cross." };
+  return;
+    }
+
+    #check that progeny number is an integer less than maximum allowed
+    my $maximum_progeny_number = 999; #higher numbers break cross name convention
+    if ($progeny_number) {
+      if ((! $progeny_number =~ m/^\d+$/) or ($progeny_number > $maximum_progeny_number) or ($progeny_number < 1)) {
+  $c->stash->{rest} = {error =>  "The progeny number $progeny_number exceeds the maximum of $maximum_progeny_number or is invalid. Please fix and try again" };
+  return 0;
+      }
+    }
+
+    #check that maternal name is not blank
+    if ($maternal eq "" && ($cross_type ne "polycross") && ($cross_type ne "reciprocal") && ($cross_type ne "multicross")) {
+      $c->stash->{rest} = {error =>  "Female parent name cannot be blank. Please fix and try again." };
+      return 0;
+    }
+
+    #if required, check that paternal parent name is not blank;
+    if ($paternal eq "" && ($cross_type ne "open") && ($cross_type ne "bulk_open") && ($cross_type ne "polycross") && ($cross_type ne "reciprocal") && ($cross_type ne "multicross")) {
+      $c->stash->{rest} = {error =>  "Male parent name cannot be blank. Please fix and try again." };
+      return 0;
+    }
+
+    #check that parents of the correct stocktype exist in the database
+    if (! $chado_schema->resultset("Stock::Stock")->find({name=>$maternal,})){
+      $c->stash->{rest} = {error =>  "Female parent was not found in the database. Please fix and try again." };
+      return 0;
+    }
+
+    if ($paternal) {
+      if (! $chado_schema->resultset("Stock::Stock")->find({name=>$paternal,})){
+  $c->stash->{rest} = {error =>  "Male parent was not found in the database. Please fix and try again." };
+  return 0;
+      }
+    }
+
+    #check that cross name does not already exist
+    if ($chado_schema->resultset("Stock::Stock")->find({name=>$cross_name})){
+      $c->stash->{rest} = {error =>  "This cross name already exists. Please try again with a different name." };
+      return 0;
+    }
+
+    #check that progeny do not already exist
+    if ($chado_schema->resultset("Stock::Stock")->find({name=>$cross_name.$prefix.'001'.$suffix,})){
+      $c->stash->{rest} = {error =>  "Progeny with these names (".$cross_name.$prefix.'001'.$suffix.") already exist. Please change the naming pattern and try again." };
+      return 0;
+    }
 
     if ($folder_name && !$folder_id) {
       eval {
@@ -272,18 +335,6 @@ sub add_cross_POST :Args(0) {
     my $breeding_program = $chado_schema->resultset("Project::Project")->find( { project_id => $breeding_program_id });
     my $program = $breeding_program->name();
 
-    if (!$c->user()) {
-  print STDERR "User not logged in... not adding a cross.\n";
-  $c->stash->{rest} = {error => "You need to be logged in to add a cross." };
-  return;
-    }
-
-    if (!any { $_ eq "curator" || $_ eq "submitter" } ($c->user()->roles)  ) {
-  print STDERR "User does not have sufficient privileges.\n";
-  $c->stash->{rest} = {error =>  "you have insufficient privileges to add a cross." };
-  return;
-    }
-
     if ($cross_type eq "polycross") {
       print STDERR "Handling a polycross\n";
         my @maternal_parents = split (',', $c->req->param('maternal_parents'));
@@ -296,8 +347,8 @@ sub add_cross_POST :Args(0) {
         for (my $i = 0; $i < scalar @maternal_parents; $i++) {
           my $maternal = $maternal_parents[$i];
           my $polycross_name = $cross_name . '_' . $maternal . '_polycross';
-          print STDERR "First polycross to add is $polycross_name with amternal $maternal and paternal $paternal\n";
-          my $success = $self->add_individual_cross($c, $chado_schema, $polycross_name, $cross_type, $program, $maternal, $paternal, $folder_id);
+          print STDERR "First polycross to add is $polycross_name with maternal $maternal and paternal $paternal\n";
+          my $success = $self->add_individual_cross($c, $chado_schema, $polycross_name, $cross_type, $progeny_number, $prefix, $suffix, $program, $maternal, $paternal, $folder_id);
           if (!$success) {
             return;
           }
@@ -315,7 +366,7 @@ sub add_cross_POST :Args(0) {
               next;
             }
             my $reciprocal_cross_name = $cross_name . '_' . $maternal . 'x' . $paternal . '_reciprocalcross';
-            my $success = $self->add_individual_cross($c, $chado_schema, $reciprocal_cross_name, $cross_type, $program, $maternal, $paternal, $folder_id);
+            my $success = $self->add_individual_cross($c, $chado_schema, $reciprocal_cross_name, $cross_type, $progeny_number, $prefix, $suffix, $program, $maternal, $paternal, $folder_id);
             if (!$success) {
               return;
             }
@@ -330,16 +381,14 @@ sub add_cross_POST :Args(0) {
             my $maternal = $maternal_parents[$i];
             my $paternal = $paternal_parents[$i];
             my $multicross_name = $cross_name . '_' . $maternal . 'x' . $paternal . '_multicross';
-            my $success = $self->add_individual_cross($c, $chado_schema, $multicross_name, $cross_type, $program, $maternal, $paternal, $folder_id);
+            my $success = $self->add_individual_cross($c, $chado_schema, $multicross_name, $cross_type, $progeny_number, $prefix, $suffix, $program, $maternal, $paternal, $folder_id);
             if (!$success) {
               return;
             }
         }
       }
       else {
-        my $maternal = $c->req->param('maternal');
-        my $paternal = $c->req->param('paternal');
-        my $success = $self->add_individual_cross($c, $chado_schema, $cross_name, $cross_type, $program, $maternal, $paternal, $folder_id);
+        my $success = $self->add_individual_cross($c, $chado_schema, $cross_name, $cross_type, $progeny_number, $prefix, $suffix, $program, $maternal, $paternal, $folder_id);
         if (!$success) {
           return;
         }
@@ -604,6 +653,9 @@ sub add_individual_cross {
   my $chado_schema = shift;
   my $cross_name = shift;
   my $cross_type = shift;
+  my $progeny_number = shift;
+  my $prefix = shift;
+  my $suffix = shift;
   my $program = shift;
   my $maternal = shift;
   my $paternal = shift;
@@ -615,61 +667,12 @@ sub add_individual_cross {
   my $phenome_schema = $c->dbic_schema("CXGN::Phenome::Schema");
   my $dbh = $c->dbc->dbh;
   my $location = $c->req->param('location');
-  my $prefix = $c->req->param('prefix');
-  my $suffix = $c->req->param('suffix');
-  my $progeny_number = $c->req->param('progeny_number');
   my $number_of_flowers = $c->req->param('number_of_flowers');
   my $number_of_fruits = $c->req->param('number_of_fruits');
   my $number_of_seeds = $c->req->param('number_of_seeds');
   my $visible_to_role = $c->req->param('visible_to_role');
 
   print STDERR "Adding Cross... Maternal: $maternal Paternal: $paternal Cross Type: $cross_type\n";
-
-  #check that progeny number is an integer less than maximum allowed
-  my $maximum_progeny_number = 999; #higher numbers break cross name convention
-  if ($progeny_number) {
-    if ((! $progeny_number =~ m/^\d+$/) or ($progeny_number > $maximum_progeny_number) or ($progeny_number < 1)) {
-$c->stash->{rest} = {error =>  "The progeny number $progeny_number exceeds the maximum of $maximum_progeny_number or is invalid. Please fix and try again" };
-return 0;
-    }
-  }
-
-  #check that maternal name is not blank
-  if ($maternal eq "") {
-    $c->stash->{rest} = {error =>  "Female parent name cannot be blank. Please fix and try again." };
-    return 0;
-  }
-
-  #if required, check that paternal parent name is not blank;
-  if ($paternal eq "" && ($cross_type ne "open") && ($cross_type ne "bulk_open")) {
-    $c->stash->{rest} = {error =>  "Male parent name cannot be blank. Please fix and try again." };
-    return 0;
-  }
-
-  #check that parents exist in the database
-  if (! $chado_schema->resultset("Stock::Stock")->find({name=>$maternal,})){
-    $c->stash->{rest} = {error =>  "Female parent was not found in the database. Please fix and try again." };
-    return 0;
-  }
-
-  if ($paternal) {
-    if (! $chado_schema->resultset("Stock::Stock")->find({name=>$paternal,})){
-$c->stash->{rest} = {error =>  "Male parent was not found in the database. Please fix and try again." };
-return 0;
-    }
-  }
-
-  #check that cross name does not already exist
-  if ($chado_schema->resultset("Stock::Stock")->find({name=>$cross_name})){
-    $c->stash->{rest} = {error =>  "This cross name already exists. Please try again with a different name." };
-    return 0;
-  }
-
-  #check that progeny do not already exist
-  if ($chado_schema->resultset("Stock::Stock")->find({name=>$cross_name.$prefix.'001'.$suffix,})){
-    $c->stash->{rest} = {error =>  "Progeny with these names (".$cross_name.$prefix.'001'.$suffix.") already exist. Please change the naming pattern and try again." };
-    return 0;
-  }
 
   #objects to store cross information
   my $cross_to_add = Bio::GeneticRelationships::Pedigree->new(name => $cross_name, cross_type => $cross_type);

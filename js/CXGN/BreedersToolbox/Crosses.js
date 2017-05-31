@@ -246,9 +246,10 @@ jQuery(document).ready(function($) {
                 break;
             case 'multicross':
                 maternal_parents = get_accession_names('maternal_accessions_list_select');
-                if (!Array.isArray(maternal_parents)) { alert(maternal_parents); return; }
                 paternal_parents = get_accession_names('paternal_accessions_list_select');
+                if (!Array.isArray(maternal_parents)) { alert(maternal_parents); return; }
                 if (!Array.isArray(paternal_parents)) { alert(paternal_parents); return; }
+                if (maternal_parents.length != paternal_parents.length)) { alert("Error, uneven number of parents. To create a multicross, the maternal and paternal parent lists must contain the same number of accessions."); return; }
                 break;
         }
 
