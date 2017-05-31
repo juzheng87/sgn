@@ -208,47 +208,33 @@ jQuery(document).ready(function($) {
             case 'biparental':
                 maternal = $("#maternal_parent").val();
                 paternal = $("#paternal_parent").val();
-                parental_status = check_parents([maternal, paternal]);
-                if (parental_status != "Parents found.") { alert(parental_status); return; }
                 break;
             case 'self':
                 var selfedParent = $("#selfed_parent").val();
                 maternal = selfedParent;
                 paternal = selfedParent;
-                parental_status = check_parents([maternal, paternal]);
-                if (parental_status != "Parents found.") { alert(parental_status); return; }
                 break;
             case 'open':
                 maternal = $("#open_maternal_parent").val();
                 paternal = $("#open_paternal_population").val();
-                parental_status = check_parents([maternal, paternal]);
-                if (parental_status != "Parents found.") { alert(parental_status); return; }
                 break;
             case 'bulk':
                 maternal = $("#bulk_maternal_population").val();
                 paternal = $("#bulk_paternal_parent").val();
-                parental_status = check_parents([maternal, paternal]);
-                if (parental_status != "Parents found.") { alert(parental_status); return; }
                 break;
             case 'bulk_self':
                 var bulkedSelfedPopulation = $("#bulk_selfed_population").val();
                 maternal = bulkedSelfedPopulation;
                 paternal = bulkedSelfedPopulation;
-                parental_status = check_parents([maternal, paternal]);
-                if (parental_status != "Parents found.") { alert(parental_status); return; }
                 break;
             case 'bulk_open':
                 maternal = $("#bulk_open_maternal_population").val();
                 paternal = $("#bulk_open_paternal_population").val();
-                parental_status = check_parents([maternal, paternal]);
-                if (parental_status != "Parents found.") { alert(parental_status); return; }
                 break;
             case 'doubled_haploid':
                 var doubledHaploidParent = $("#doubled_haploid_parent").val();
                 maternal = doubledHaploidParent;
                 paternal = doubledHaploidParent;
-                parental_status = check_parents([maternal, paternal]);
-                if (parental_status != "Parents found.") { alert(parental_status); return; }
                 break;
             case 'polycross':
                 maternal_parents = get_accession_names('polycross_accessions_list_select');
@@ -273,19 +259,23 @@ jQuery(document).ready(function($) {
             type: 'POST',
             data: 'cross_name=' + crossName + '&cross_type=' + crossType + '&maternal=' + maternal + '&paternal=' + paternal + '&maternal_parents=' + maternal_parents + '&paternal_parents=' + paternal_parents + '&progeny_number=' + progenyNumber + '&flower_number=' + flowerNumber + '&fruit_number=' + fruitNumber + '&seed_number=' + seedNumber + '&prefix=' + prefix + '&suffix=' + suffix + '&visible_to_role' + visibleToRole + '&breeding_program_id=' + breeding_program_id + '&location=' + location + '&folder_name=' + folder_name + '&folder_id=' + folder_id,
             beforeSend: function() {
-                jQuery("#create_cross").modal("hide");
+                //jQuery("#create_cross").modal("hide");
                 jQuery("#working_modal").modal("show");
             },
             error: function(response) {
+                jQuery("#working_modal").modal("hide");
                 alert("An error occurred. Please try again later!" + JSON.stringify(response));
             },
             parseerror: function(response) {
+                jQuery("#working_modal").modal("hide");
                 alert("A parse error occurred. Please try again." + response);
             },
             success: function(response) {
                 if (response.error) {
+                    jQuery("#working_modal").modal("hide");
                     alert(response.error);
                 } else {
+                    jQuery("#create_cross").modal("hide");
                     jQuery("#working_modal").modal("hide");
                     $('#cross_saved_dialog_message').modal("show");
                 }
@@ -302,42 +292,6 @@ jQuery(document).ready(function($) {
             return;
         }
         $("#upload_crosses_form").submit();
-    }
-
-    function check_parents(names) {
-        var parents = JSON.stringify(names);
-        var status;
-        console.log(parents);
-        jQuery.ajax({
-            type: 'POST',
-            url: '/ajax/accession_list/verify',
-            timeout: 36000000,
-            async: false,
-            dataType: "json",
-            data: {
-                'accession_list': parents,
-                'do_fuzzy_search': false,
-            },
-            beforeSend: function(){
-            },
-            success: function (response) {
-                if (response.error) {
-                    status = response.error;
-                } else {
-                    console.log("response: "+JSON.stringify(response));
-                    if (response.absent.length > 0) {
-                        console.log("absent: "+JSON.stringify(response.absent));
-                        status = "Parent "+response.absent+" does not exist. Please add this accession to the database, or use a different parent.";
-                    } else {
-                        status = "Parents found.";
-                    }
-                }
-            },
-            error: function () {
-                status = 'An error occurred in processing parent names.';
-            }
-        });
-        return status;
     }
 
     function get_accession_names(accession_select_id) {

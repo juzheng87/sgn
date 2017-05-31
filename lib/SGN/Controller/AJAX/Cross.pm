@@ -564,7 +564,7 @@ sub get_crosses_with_folders : Path('/ajax/breeders/get_crosses_with_folders') A
         $html .= $folder_obj->get_jstree_html(\%project, $schema, 'breeding_program', 'cross');
     }
     print STDERR "Finished get crosses at time ".localtime()."\n";
-    
+
     my $dir = catdir($c->site_cluster_shared_dir, "folder");
     eval { make_path($dir) };
     if ($@) {
@@ -629,45 +629,45 @@ sub add_individual_cross {
   my $maximum_progeny_number = 999; #higher numbers break cross name convention
   if ($progeny_number) {
     if ((! $progeny_number =~ m/^\d+$/) or ($progeny_number > $maximum_progeny_number) or ($progeny_number < 1)) {
-$c->stash->{rest} = {error =>  "progeny number exceeds the maximum of $maximum_progeny_number or is invalid." };
+$c->stash->{rest} = {error =>  "The progeny number $progeny_number exceeds the maximum of $maximum_progeny_number or is invalid. Please fix and try again" };
 return 0;
     }
   }
 
   #check that maternal name is not blank
   if ($maternal eq "") {
-    $c->stash->{rest} = {error =>  "Female parent name cannot be blank." };
+    $c->stash->{rest} = {error =>  "Female parent name cannot be blank. Please fix and try again." };
     return 0;
   }
 
   #if required, check that paternal parent name is not blank;
   if ($paternal eq "" && ($cross_type ne "open") && ($cross_type ne "bulk_open")) {
-    $c->stash->{rest} = {error =>  "Male parent name cannot be blank." };
+    $c->stash->{rest} = {error =>  "Male parent name cannot be blank. Please fix and try again." };
     return 0;
   }
 
   #check that parents exist in the database
   if (! $chado_schema->resultset("Stock::Stock")->find({name=>$maternal,})){
-    $c->stash->{rest} = {error =>  "Female parent does not exist." };
+    $c->stash->{rest} = {error =>  "Female parent was not found in the database. Please fix and try again." };
     return 0;
   }
 
   if ($paternal) {
     if (! $chado_schema->resultset("Stock::Stock")->find({name=>$paternal,})){
-$c->stash->{rest} = {error =>  "Male parent does not exist." };
+$c->stash->{rest} = {error =>  "Male parent was not found in the database. Please fix and try again." };
 return 0;
     }
   }
 
   #check that cross name does not already exist
   if ($chado_schema->resultset("Stock::Stock")->find({name=>$cross_name})){
-    $c->stash->{rest} = {error =>  "cross name already exists." };
+    $c->stash->{rest} = {error =>  "This cross name already exists. Please try again with a different name." };
     return 0;
   }
 
   #check that progeny do not already exist
   if ($chado_schema->resultset("Stock::Stock")->find({name=>$cross_name.$prefix.'001'.$suffix,})){
-    $c->stash->{rest} = {error =>  "progeny already exist." };
+    $c->stash->{rest} = {error =>  "Progeny with these names (".$cross_name.$prefix.'001'.$suffix.") already exist. Please change the naming pattern and try again." };
     return 0;
   }
 
