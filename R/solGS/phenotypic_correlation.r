@@ -17,7 +17,9 @@ library(lme4)
 library(data.table)
 library(phenoAnalysis)
 #library(rbenchmark)
-
+library(foreach)
+library(doParallel)
+library(dplyr)
 
 allargs<-commandArgs()
 
@@ -99,7 +101,7 @@ if (length(refererQtl) != 0) {
 }
 
 if (!is.null(phenoData) && length(refererQtl) == 0) {
-  
+
   for (i in allTraitNames) {
 
     if (class(phenoData[, i]) != 'numeric') {
@@ -122,19 +124,13 @@ filteredTraits <- allTraitNames[!allTraitNames %in% naTraitNames]
 
 ###############################
 if (length(refererQtl) == 0  ) {
-  cnt   <- 0
- 
-  for (trait in filteredTraits) {
-
-    cnt   <- cnt + 1
+  
+  registerDoParallel()
+  lsDf <- foreach (trait=filteredTraits) %dopar% {
     adjMeans <- getAdjMeans(phenoData, trait)
-
-    if (cnt == 1 ) {
-      formattedPhenoData <- adjMeans
-    } else {
-      formattedPhenoData <-  merge(formattedPhenoData, adjMeans,  all=TRUE)
-    }
   }
+
+  formattedPhenoData <- lsDf %>% Reduce(function(df1, df2) full_join(df1, df2, by="genotypes"), .)
 
 } else {
   message("qtl stuff")
