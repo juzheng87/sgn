@@ -17,11 +17,31 @@ RUN apt-get -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-
 	&& apt-get update \
 	&& apt-get install -y apt-utils gcc build-essential module-assistant sudo nano htop git curl graphviz imagemagick wget
 
+# Core Repos
+RUN mkdir /cxgn && cd /cxgn/ \
+	&& git clone https://github.com/solgenomics/sgn.git && git clone https://github.com/solgenomics/cxgn-corelibs.git && git clone https://github.com/solgenomics/Phenome.git && git clone https://github.com/solgenomics/biosource.git && git clone https://github.com/solgenomics/Cview.git && git clone https://github.com/solgenomics/ITAG.git && git clone https://github.com/solgenomics/tomato_genome.git && git clone https://github.com/GMOD/Chado.git && git clone https://github.com/solgenomics/sgn-devtools.git && git clone https://github.com/solgenomics/solGS.git && git clone https://github.com/solgenomics/Barcode-Code128.git && git clone https://github.com/solgenomics/Tea.git && git clone https://github.com/solgenomics/art.git && git clone https://github.com/solgenomics/VIGS.git && git clone https://github.com/solgenomics/fixture.git && git clone https://github.com/solgenomics/starmachine.git
+
+# Mason website skins
+RUN git clone https://github.com/solgenomics/cassava.git && git clone https://github.com/solgenomics/yambase.git && git clone https://github.com/solgenomics/sweetpotatobase.git && git clone https://github.com/solgenomics/ricebase.git && git clone https://github.com/solgenomics/citrusgreening.git && git clone https://github.com/solgenomics/coconut.git && git clone https://github.com/solgenomics/cassbase.git && git clone https://github.com/solgenomics/musabase.git && git clone https://github.com/solgenomics/potatobase.git && git clone https://github.com/solgenomics/cea.git
+
 # Install postgres 9.6
 RUN echo 'deb http://apt.postgresql.org/pub/repos/apt/ jessie-pgdg main' >> /etc/apt/sources.list.d/postgresql.list
 RUN wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
 RUN apt-get update -y
 RUN apt-get install postgresql-9.6 -y
+
+#Configure trust connection for psql postgres user and create web_usr .
+RUN sed -i s/peer/trust/ /etc/postgresql/9.6/main/pg_hba.conf
+RUN /etc/init.d/postgresql restart
+#Create web_usr role with password web_usr
+RUN yes web_usr | createuser -U postgres -P web_usr
+#Change postgres role password to postgres
+RUN echo "ALTER ROLE postgres WITH PASSWORD 'postgres';" | psql -U postgres
+RUN /etc/init.d/postgresql restart
+
+#Create fixture db and load fixture.sql
+RUN -u postgres createdb -E UTF8 --locale en_US.utf8 -T template0 fixture
+RUN psql -U postgres -d fixture -f /cxgn/fixture/cxgn_fixture.sql
 
 # Install R
 RUN apt-get install apt-transport-https -y \
@@ -60,8 +80,7 @@ RUN apt-get install apt-transport-https -y \
 #	&& R -e "install.packages('ggplot2', dependencies=TRUE, repos='http://cran.rstudio.com/')"
 
 # Install Legacy NCBI Blast
-RUN mkdir /cxgn \
-	&& cd /cxgn/ \
+RUN cd /cxgn/ \
 	&& mkdir blast \
 	&& cd /cxgn/blast/ \
 	&& wget ftp://ftp.ncbi.nlm.nih.gov/blast/executables/legacy/2.2.9/blast-2.2.9-amd64-linux.tar.gz \
@@ -87,17 +106,11 @@ RUN /etc/init.d/slurmctld start
 RUN systemctl enable slurmd.service
 #RUN /etc/init.d/slurmd start
 
-# Core Repos
-RUN cd /cxgn/ \
-	&& git clone https://github.com/solgenomics/sgn.git && git clone https://github.com/solgenomics/cxgn-corelibs.git && git clone https://github.com/solgenomics/Phenome.git && git clone https://github.com/solgenomics/biosource.git && git clone https://github.com/solgenomics/Cview.git && git clone https://github.com/solgenomics/ITAG.git && git clone https://github.com/solgenomics/tomato_genome.git && git clone https://github.com/GMOD/Chado.git && git clone https://github.com/solgenomics/sgn-devtools.git && git clone https://github.com/solgenomics/solGS.git && git clone https://github.com/solgenomics/Barcode-Code128.git && git clone https://github.com/solgenomics/Tea.git && git clone https://github.com/solgenomics/art.git && git clone https://github.com/solgenomics/VIGS.git && git clone https://github.com/solgenomics/fixture.git && git clone https://github.com/solgenomics/starmachine.git
-
-# Mason website skins
-RUN git clone https://github.com/solgenomics/cassava.git && git clone https://github.com/solgenomics/yambase.git && git clone https://github.com/solgenomics/sweetpotatobase.git && git clone https://github.com/solgenomics/ricebase.git && git clone https://github.com/solgenomics/citrusgreening.git && git clone https://github.com/solgenomics/coconut.git && git clone https://github.com/solgenomics/cassbase.git && git clone https://github.com/solgenomics/musabase.git && git clone https://github.com/solgenomics/potatobase.git && git clone https://github.com/solgenomics/cea.git
-
 # Install perl modules
+RUN mkdir /cxgn/local-lib
 RUN curl -L https://cpanmin.us | perl - --sudo App::cpanminus \
 	&& apt-get install -y libgd2-xpm-dev libcairo2-dev libpq-dev libxml-libxml-perl \
-	&& cpanm install Catalyst::ScriptRunner Catalyst::Restarter HTML::Mason::Interp Selenium::Remote::Driver DBI Hash::Merge DBIx::Connector Catalyst::Plugin::Authorization::Roles Bio::PrimarySeq Class::DBI Tie::UrlEncoder Data::BitMask enum File::NFSLock Class::MethodMaker Bio::BLAST::Database Catalyst::Plugin::SmartURI Modern::Perl List::Compare Cache::File Config::JFDI CatalystX::GlobalContext --force DBIx::Class::Schema Bio::Chado::Schema Array::Utils JSON::Any Math::Round Math::Round::Var Catalyst::View::Email Catalyst::View::HTML::Mason Catalyst::View::Bio::SeqIO Catalyst::View::JavaScript::Minifier::XS@2.101001 Catalyst::View::Download::CSV URI::FromHash JSAN::ServerSide Config::INI::Reader Bio::GFF3::LowLevel Statistics::Descriptive String::Random MooseX::FollowPBP GD Tie::Function Digest::Crc32 Barcode::Code128 Math::Base36 Captcha::reCAPTCHA Test::Aggregate::Nested --force HTML::FormFu SVG IPC::Run3 Spreadsheet::WriteExcel MooseX::Object::Pluggable R::YapRI::Base PDF::Create String::CRC Algorithm::Combinatorics Catalyst::Controller::HTML::FormFu String::Approx Cairo Chart::Clicker Spreadsheet::ParseExcel MooseX::Types::URI Bio::Graphics::FeatureFile --force Mail::Sendmail Array::Compare GD::Graph::lines GD::Graph::Map Bio::GMOD::GenericGenePage Number::Bytes::Human AnyEvent --force IO::Event --force File::Flock Graph Bio::SeqFeature::Annotated XML::Twig XML::Generator DBD::Pg MooseX::Runnable@0.09 XML::Feed Parse::Deb::Control Bio::GMOD::Blast::Graph Catalyst::DispatchType::Regex DateTime::Format::Flexible DateTime::Format::Pg HTML::TreeBuilder::XPath JSON::XS Lingua::EN::Inflect List::AllUtils MooseX::Declare MooseX::Singleton SOAP::Transport::HTTP Test::Class WWW::Mechanize::TreeBuilder Data::UUID HTML::Lint --force Test::JSON Test::MockObject Test::WWW::Selenium Sort::Versions Term::ReadKey --force Spreadsheet::Read Sort::Maker Term::Size::Any Proc::ProcessTable URI::Encode Archive::Zip Statistics::R Lucy::Simple DBIx::Class::Schema::Loader Text::CSV Imager::QRCode GD::Barcode::QRcode LWP::UserAgent Set::Product Server::Starter Net::Server::SS::PreFork Catalyst::Plugin::Assets --force
+	&& cpanm install -L /cxgn/local-lib/ Catalyst::ScriptRunner Catalyst::Restarter HTML::Mason::Interp Selenium::Remote::Driver DBI Hash::Merge DBIx::Connector Catalyst::Plugin::Authorization::Roles Bio::PrimarySeq Class::DBI Tie::UrlEncoder Data::BitMask enum File::NFSLock Class::MethodMaker Bio::BLAST::Database Catalyst::Plugin::SmartURI Modern::Perl List::Compare Cache::File Config::JFDI CatalystX::GlobalContext --force DBIx::Class::Schema Bio::Chado::Schema Array::Utils JSON::Any Math::Round Math::Round::Var Catalyst::View::Email Catalyst::View::HTML::Mason Catalyst::View::Bio::SeqIO Catalyst::View::JavaScript::Minifier::XS@2.101001 Catalyst::View::Download::CSV URI::FromHash JSAN::ServerSide Config::INI::Reader Bio::GFF3::LowLevel Statistics::Descriptive String::Random MooseX::FollowPBP GD Tie::Function Digest::Crc32 Barcode::Code128 Math::Base36 Captcha::reCAPTCHA Test::Aggregate::Nested --force HTML::FormFu SVG IPC::Run3 Spreadsheet::WriteExcel MooseX::Object::Pluggable R::YapRI::Base PDF::Create String::CRC Algorithm::Combinatorics Catalyst::Controller::HTML::FormFu String::Approx Cairo Chart::Clicker Spreadsheet::ParseExcel MooseX::Types::URI Bio::Graphics::FeatureFile --force Mail::Sendmail Array::Compare GD::Graph::lines GD::Graph::Map Bio::GMOD::GenericGenePage Number::Bytes::Human AnyEvent --force IO::Event --force File::Flock Graph Bio::SeqFeature::Annotated XML::Twig XML::Generator DBD::Pg MooseX::Runnable@0.09 XML::Feed Parse::Deb::Control Bio::GMOD::Blast::Graph Catalyst::DispatchType::Regex DateTime::Format::Flexible DateTime::Format::Pg HTML::TreeBuilder::XPath JSON::XS Lingua::EN::Inflect List::AllUtils MooseX::Declare MooseX::Singleton SOAP::Transport::HTTP Test::Class WWW::Mechanize::TreeBuilder Data::UUID HTML::Lint --force Test::JSON Test::MockObject Test::WWW::Selenium Sort::Versions Term::ReadKey --force Spreadsheet::Read Sort::Maker Term::Size::Any Proc::ProcessTable URI::Encode Archive::Zip Statistics::R Lucy::Simple DBIx::Class::Schema::Loader Text::CSV Imager::QRCode GD::Barcode::QRcode LWP::UserAgent Set::Product Server::Starter Net::Server::SS::PreFork Catalyst::Plugin::Assets --force
 
 RUN mkdir /export && mkdir /export/prod && mkdir /export/prod/public && mkdir /export/prod/public/sgn_static_content && mkdir /export/prod/tmp && mkdir /export/prod/tmp/solgs && mkdir /data && mkdir /data/prod && mkdir /data/prod/archive && mkdir /export/prod/public/images && mkdir /export/prod/public/images/image_files && mkdir /data/shared && mkdir /data/shared/tmp && mkdir /var/log/sgn && chown -R docker:docker /data/prod/ && chown -R docker:docker /export/prod/ && mkdir /etc/starmachine
 
