@@ -98,9 +98,9 @@ RUN systemctl enable slurmd.service
 RUN mkdir /cxgn/local-lib
 RUN curl -L https://cpanmin.us | perl - --sudo App::cpanminus \
 	&& apt-get install -y libgd2-xpm-dev libcairo2-dev libpq-dev libxml-libxml-perl \
-	&& cpanm install -L /cxgn/local-lib/ Catalyst::ScriptRunner Catalyst::Restarter HTML::Mason::Interp Selenium::Remote::Driver DBI Hash::Merge DBIx::Connector Catalyst::Plugin::Authorization::Roles Bio::PrimarySeq Class::DBI Tie::UrlEncoder Data::BitMask enum File::NFSLock Class::MethodMaker Bio::BLAST::Database Catalyst::Plugin::SmartURI Modern::Perl List::Compare Cache::File Config::JFDI CatalystX::GlobalContext --force DBIx::Class::Schema Bio::Chado::Schema Array::Utils JSON::Any Math::Round Math::Round::Var Catalyst::View::Email Catalyst::View::HTML::Mason Catalyst::View::Bio::SeqIO Catalyst::View::JavaScript::Minifier::XS@2.101001 Catalyst::View::Download::CSV URI::FromHash JSAN::ServerSide Config::INI::Reader Bio::GFF3::LowLevel Statistics::Descriptive String::Random MooseX::FollowPBP GD Tie::Function Digest::Crc32 Barcode::Code128 Math::Base36 Captcha::reCAPTCHA Test::Aggregate::Nested --force HTML::FormFu SVG IPC::Run3 Spreadsheet::WriteExcel MooseX::Object::Pluggable R::YapRI::Base PDF::Create String::CRC Algorithm::Combinatorics Catalyst::Controller::HTML::FormFu String::Approx Cairo Chart::Clicker Spreadsheet::ParseExcel MooseX::Types::URI Bio::Graphics::FeatureFile --force Mail::Sendmail Array::Compare GD::Graph::lines GD::Graph::Map Bio::GMOD::GenericGenePage Number::Bytes::Human AnyEvent --force IO::Event --force File::Flock Graph Bio::SeqFeature::Annotated XML::Twig XML::Generator DBD::Pg MooseX::Runnable@0.09 XML::Feed Parse::Deb::Control Bio::GMOD::Blast::Graph Catalyst::DispatchType::Regex DateTime::Format::Flexible DateTime::Format::Pg HTML::TreeBuilder::XPath JSON::XS Lingua::EN::Inflect List::AllUtils MooseX::Declare MooseX::Singleton SOAP::Transport::HTTP Test::Class WWW::Mechanize::TreeBuilder Data::UUID HTML::Lint --force Test::JSON Test::MockObject Test::WWW::Selenium Sort::Versions Term::ReadKey --force Spreadsheet::Read Sort::Maker Term::Size::Any Proc::ProcessTable URI::Encode Archive::Zip Statistics::R Lucy::Simple DBIx::Class::Schema::Loader Text::CSV Imager::QRCode GD::Barcode::QRcode LWP::UserAgent Set::Product Server::Starter Net::Server::SS::PreFork Catalyst::Plugin::Assets --force
+	&& cpanm install -L /cxgn/local-lib/ local::lib Catalyst::ScriptRunner Catalyst::Restarter HTML::Mason::Interp Selenium::Remote::Driver DBI Hash::Merge DBIx::Connector Catalyst::Plugin::Authorization::Roles Bio::PrimarySeq Class::DBI Tie::UrlEncoder Data::BitMask enum File::NFSLock Class::MethodMaker Bio::BLAST::Database Catalyst::Plugin::SmartURI Modern::Perl List::Compare Cache::File Config::JFDI CatalystX::GlobalContext --force DBIx::Class::Schema Bio::Chado::Schema Array::Utils JSON::Any Math::Round Math::Round::Var Catalyst::View::Email Catalyst::View::HTML::Mason Catalyst::View::Bio::SeqIO Catalyst::View::JavaScript::Minifier::XS@2.101001 Catalyst::View::Download::CSV URI::FromHash JSAN::ServerSide Config::INI::Reader Bio::GFF3::LowLevel Statistics::Descriptive String::Random MooseX::FollowPBP GD Tie::Function Digest::Crc32 Barcode::Code128 Math::Base36 Captcha::reCAPTCHA Test::Aggregate::Nested --force HTML::FormFu SVG IPC::Run3 Spreadsheet::WriteExcel MooseX::Object::Pluggable R::YapRI::Base PDF::Create String::CRC Algorithm::Combinatorics Catalyst::Controller::HTML::FormFu String::Approx Cairo Chart::Clicker Spreadsheet::ParseExcel MooseX::Types::URI Bio::Graphics::FeatureFile --force Mail::Sendmail Array::Compare GD::Graph::lines GD::Graph::Map Bio::GMOD::GenericGenePage Number::Bytes::Human AnyEvent --force IO::Event --force File::Flock Graph Bio::SeqFeature::Annotated XML::Twig XML::Generator DBD::Pg MooseX::Runnable@0.09 XML::Feed Parse::Deb::Control Bio::GMOD::Blast::Graph Catalyst::DispatchType::Regex DateTime::Format::Flexible DateTime::Format::Pg HTML::TreeBuilder::XPath JSON::XS Lingua::EN::Inflect List::AllUtils MooseX::Declare MooseX::Singleton SOAP::Transport::HTTP Test::Class WWW::Mechanize::TreeBuilder Data::UUID HTML::Lint --force Test::JSON Test::MockObject Test::WWW::Selenium Sort::Versions Term::ReadKey --force Spreadsheet::Read Sort::Maker Term::Size::Any Proc::ProcessTable URI::Encode Archive::Zip Statistics::R Lucy::Simple DBIx::Class::Schema::Loader Text::CSV Imager::QRCode GD::Barcode::QRcode LWP::UserAgent Set::Product Server::Starter Net::Server::SS::PreFork --force Catalyst::Plugin::Assets --force
 
-RUN mkdir /export && mkdir /export/prod && mkdir /export/prod/public && mkdir /export/prod/public/sgn_static_content && mkdir /export/prod/tmp && mkdir /export/prod/tmp/solgs && mkdir /data && mkdir /data/prod && mkdir /data/prod/archive && mkdir /export/prod/public/images && mkdir /export/prod/public/images/image_files && mkdir /data/shared && mkdir /data/shared/tmp && mkdir /var/log/sgn && chown -R docker:docker /data/prod/ && chown -R docker:docker /export/prod/ && mkdir /etc/starmachine
+RUN mkdir /export && mkdir /export/prod && mkdir /export/prod/public && mkdir /export/prod/public/sgn_static_content && mkdir /export/prod/tmp && mkdir /export/prod/tmp/solgs && mkdir /data && mkdir /data/prod && mkdir /data/prod/archive && mkdir /export/prod/public/images && mkdir /export/prod/public/images/image_files && mkdir /data/shared && mkdir /data/shared/tmp && mkdir /var/log/solbase && chown -R docker:docker /data/prod/ && chown -R docker:docker /export/prod/ && mkdir /etc/starmachine
 
 RUN cp /config/starmachine.conf /etc/starmachine
 RUN cp /config/sgn_loc.conf /cxgn/sgn
@@ -109,18 +109,8 @@ RUN cp /config/sgn_loc.conf /cxgn/sgn
 RUN mkdir /var/www && cd /var/www/ && mkdir jbrowse && cd /var/www/jbrowse/ && curl -O http://jbrowse.org/releases/JBrowse-1.12.1.zip && unzip JBrowse-1.12.1.zip && rm JBrowse-1.12.1.zip && cd /var/www/jbrowse/JBrowse-1.12.1/ && ./setup.sh
 
 
-#Configure trust connection for psql postgres user and create web_usr .
-#RUN sed -i s/peer/trust/ /etc/postgresql/9.6/main/pg_hba.conf
-#RUN service postgresql restart
-#Create web_usr role with password web_usr
-#RUN yes web_usr | createuser -U postgres -P web_usr
-#Change postgres role password to postgres
-#RUN echo "ALTER ROLE postgres WITH PASSWORD 'postgres';" | psql -U postgres
-#RUN service postgresql restart
-
-#Create fixture db and load fixture.sql
-#RUN -u postgres createdb -E UTF8 --locale en_US.utf8 -T template0 fixture
-#RUN psql -U postgres -d fixture -f /cxgn/fixture/cxgn_fixture.sql
+#Add Perl paths
+ENV PERL5LIB $PERL5LIB:/cxgn/local-lib/lib/perl5:/usr/local/lib/x86_64-linux-gnu/perl/5.20.2:/usr/local/share/perl/5.20.2:/cxgn/sgn/lib:/cxgn/cxgn-corelibs/lib:/cxgn/Phenome/lib:/cxgn/Cview/lib:/cxgn/ITAG/lib:/cxgn/biosource/lib:/cxgn/tomato_genome/lib:/cxgn/Barcode-Code128/lib:/cxgn/solGS/lib:/cxgn/Chado/chado/lib:/cxgn/Tea/lib:/cxgn/Tea
 
 # Make port 3000 available to the world outside this container
 EXPOSE 3000
@@ -134,7 +124,14 @@ RUN ln -s /cxgn/starmachine/bin/starmachine_init.d /etc/init.d/sgn
 RUN mkdir /tmp/SGN-site
 RUN chown -R www-data:www-data /tmp/SGN-site
 
-CMD sudo service sgn start
+CMD sed -i s/peer/trust/ /etc/postgresql/9.6/main/pg_hba.conf \
+    && service postgresql restart \
+    && yes web_usr | createuser -U postgres -P web_usr \
+    && echo "ALTER ROLE postgres WITH PASSWORD 'postgres';" | psql -U postgres \
+    && service postgresql restart \
+    && createdb -U postgres -E UTF8 -T template0 fixture \
+    && psql -U postgres -d fixture -f /cxgn/fixture/cxgn_fixture.sql \
+    && service sgn start
 
 # Run sgn server when the container launches
 #CMD ["perl", "bin/sgn_server.pl -r --fork -p 3000"]
