@@ -30,18 +30,6 @@ RUN wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo 
 RUN apt-get update -y
 RUN apt-get install postgresql-9.6 -y
 
-#Configure trust connection for psql postgres user and create web_usr .
-RUN sed -i s/peer/trust/ /etc/postgresql/9.6/main/pg_hba.conf
-RUN /etc/init.d/postgresql restart
-#Create web_usr role with password web_usr
-RUN yes web_usr | createuser -U postgres -P web_usr
-#Change postgres role password to postgres
-RUN echo "ALTER ROLE postgres WITH PASSWORD 'postgres';" | psql -U postgres
-RUN /etc/init.d/postgresql restart
-
-#Create fixture db and load fixture.sql
-RUN -u postgres createdb -E UTF8 --locale en_US.utf8 -T template0 fixture
-RUN psql -U postgres -d fixture -f /cxgn/fixture/cxgn_fixture.sql
 
 # Install R
 RUN apt-get install apt-transport-https -y \
@@ -118,12 +106,21 @@ RUN cp /config/starmachine.conf /etc/starmachine
 RUN cp /config/sgn_loc.conf /cxgn/sgn
 
 # Jbrowse setup
-RUN cd /var/www/ && mkdir jbrowse && cd /var/www/jbrowse/ && curl -O http://jbrowse.org/releases/JBrowse-1.12.1.zip && unzip JBrowse-1.12.1.zip && rm JBrowse-1.12.1.zip && cd /var/www/jbrowse/JBrowse-1.12.1/ && ./setup.sh
+RUN mkdir /var/www && cd /var/www/ && mkdir jbrowse && cd /var/www/jbrowse/ && curl -O http://jbrowse.org/releases/JBrowse-1.12.1.zip && unzip JBrowse-1.12.1.zip && rm JBrowse-1.12.1.zip && cd /var/www/jbrowse/JBrowse-1.12.1/ && ./setup.sh
 
-#Bashrc customization
 
-#Add Perl paths
-ENV PERL5LIB $PERL5LIB:/usr/local/lib/x86_64-linux-gnu/perl/5.20.2:/usr/local/share/perl/5.20.2:/cxgn/sgn/lib:/cxgn/cxgn-corelibs/lib:/cxgn/Phenome/lib:/cxgn/Cview/lib:/cxgn/ITAG/lib:/cxgn/biosource/lib:/cxgn/tomato_genome/lib:/cxgn/Barcode-Code128/lib:/cxgn/solGS/lib:/cxgn/Chado/chado/lib:/cxgn/Tea/lib:/cxgn/Tea
+#Configure trust connection for psql postgres user and create web_usr .
+#RUN sed -i s/peer/trust/ /etc/postgresql/9.6/main/pg_hba.conf
+#RUN service postgresql restart
+#Create web_usr role with password web_usr
+#RUN yes web_usr | createuser -U postgres -P web_usr
+#Change postgres role password to postgres
+#RUN echo "ALTER ROLE postgres WITH PASSWORD 'postgres';" | psql -U postgres
+#RUN service postgresql restart
+
+#Create fixture db and load fixture.sql
+#RUN -u postgres createdb -E UTF8 --locale en_US.utf8 -T template0 fixture
+#RUN psql -U postgres -d fixture -f /cxgn/fixture/cxgn_fixture.sql
 
 # Make port 3000 available to the world outside this container
 EXPOSE 3000
@@ -134,10 +131,8 @@ WORKDIR /cxgn/sgn/
 #Register starmachine init as a service
 RUN ln -s /cxgn/starmachine/bin/starmachine_init.d /etc/init.d/sgn
 #/etc/init.d/sgn start
-RUN mkdir /tmp
 RUN mkdir /tmp/SGN-site
-RUN cd /tmp/
-RUN chown -R www-data:www-data SGN-site
+RUN chown -R www-data:www-data /tmp/SGN-site
 
 CMD sudo service sgn start
 
