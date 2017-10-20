@@ -1,7 +1,7 @@
 # perl import built ontop of debian:jessie
 FROM perl:5.20
 
-ENV NAME sgndev
+ENV NAME solbase
 ENV DEBIAN_FRONTEND=noninteractive
 
 # Copy the current directory contents into the container at /config
@@ -85,11 +85,8 @@ RUN apt-get install -y libmunge-dev libmunge2 munge slurm-wlm slurmctld slurmd l
 	&& ln -s /var/lib/slurm-llnl /var/lib/slurm
 
 RUN systemctl enable munge.service
-RUN /etc/init.d/munge start
 RUN systemctl enable slurmctld.service
-RUN /etc/init.d/slurmctld start
 RUN systemctl enable slurmd.service
-#RUN /etc/init.d/slurmd start
 
 # Install perl modules
 RUN mkdir /cxgn/local-lib
@@ -117,7 +114,6 @@ WORKDIR /cxgn/sgn/
 
 #Register starmachine init as a service
 RUN ln -s /cxgn/starmachine/bin/starmachine_init.d /etc/init.d/sgn
-#/etc/init.d/sgn start
 RUN mkdir /tmp/SGN-site
 RUN chown -R www-data:www-data /tmp/SGN-site
 RUN mv /cxgn/sgn/sgn_loc.conf /cxgn/sgn/sgn_local.conf
@@ -129,4 +125,7 @@ CMD sed -i s/peer/trust/ /etc/postgresql/9.6/main/pg_hba.conf \
     && service postgresql restart \
     && createdb -U postgres -E UTF8 -T template0 fixture \
     && psql -U postgres -d fixture -f /cxgn/fixture/cxgn_fixture.sql \
+    && service munge start \
+    && service slurmctld start \
+    && service slurmd start \
     && service sgn start
