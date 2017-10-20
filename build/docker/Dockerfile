@@ -128,4 +128,5 @@ CMD sed -i s/peer/trust/ /etc/postgresql/9.6/main/pg_hba.conf \
     && service munge start \
     && service slurmctld start \
     && service slurmd start \
-    && service sgn start
+    && service sgn start \
+    && while true; do sleep 1000; done
