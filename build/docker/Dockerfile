@@ -19,10 +19,7 @@ RUN apt-get -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-
 
 # Core Repos
 RUN mkdir /cxgn && cd /cxgn/ \
-	&& git clone https://github.com/solgenomics/sgn.git && git clone https://github.com/solgenomics/cxgn-corelibs.git && git clone https://github.com/solgenomics/Phenome.git && git clone https://github.com/solgenomics/biosource.git && git clone https://github.com/solgenomics/Cview.git && git clone https://github.com/solgenomics/ITAG.git && git clone https://github.com/solgenomics/tomato_genome.git && git clone https://github.com/GMOD/Chado.git && git clone https://github.com/solgenomics/sgn-devtools.git && git clone https://github.com/solgenomics/solGS.git && git clone https://github.com/solgenomics/Barcode-Code128.git && git clone https://github.com/solgenomics/Tea.git && git clone https://github.com/solgenomics/art.git && git clone https://github.com/solgenomics/VIGS.git && git clone https://github.com/solgenomics/fixture.git && git clone https://github.com/solgenomics/starmachine.git
-
-# Mason website skins
-RUN git clone https://github.com/solgenomics/cassava.git && git clone https://github.com/solgenomics/yambase.git && git clone https://github.com/solgenomics/sweetpotatobase.git && git clone https://github.com/solgenomics/ricebase.git && git clone https://github.com/solgenomics/citrusgreening.git && git clone https://github.com/solgenomics/coconut.git && git clone https://github.com/solgenomics/cassbase.git && git clone https://github.com/solgenomics/musabase.git && git clone https://github.com/solgenomics/potatobase.git && git clone https://github.com/solgenomics/cea.git
+	&& git clone https://github.com/solgenomics/sgn.git && git clone https://github.com/solgenomics/cxgn-corelibs.git && git clone https://github.com/solgenomics/Phenome.git && git clone https://github.com/solgenomics/biosource.git && git clone https://github.com/solgenomics/Cview.git && git clone https://github.com/solgenomics/ITAG.git && git clone https://github.com/solgenomics/tomato_genome.git && git clone https://github.com/GMOD/Chado.git && git clone https://github.com/solgenomics/sgn-devtools.git && git clone https://github.com/solgenomics/solGS.git && git clone https://github.com/solgenomics/Barcode-Code128.git && git clone https://github.com/solgenomics/Tea.git && git clone https://github.com/solgenomics/art.git && git clone https://github.com/solgenomics/VIGS.git && git clone https://github.com/solgenomics/fixture.git && git clone https://github.com/solgenomics/starmachine.git && git clone https://github.com/solgenomics/cassava.git && git clone https://github.com/solgenomics/yambase.git && git clone https://github.com/solgenomics/sweetpotatobase.git && git clone https://github.com/solgenomics/ricebase.git && git clone https://github.com/solgenomics/citrusgreening.git && git clone https://github.com/solgenomics/coconut.git && git clone https://github.com/solgenomics/cassbase.git && git clone https://github.com/solgenomics/musabase.git && git clone https://github.com/solgenomics/potatobase.git && git clone https://github.com/solgenomics/cea.git
 
 # Install postgres 9.6
 RUN echo 'deb http://apt.postgresql.org/pub/repos/apt/ jessie-pgdg main' >> /etc/apt/sources.list.d/postgresql.list
@@ -40,32 +37,32 @@ RUN apt-get install apt-transport-https -y \
 	&& apt-get install -y r-base r-base-dev libatlas3-base libcurl4-openssl-dev --force-yes
 # Install R packages
 #qtl (>= 1.24-9), gplots (>= 2.10.1), ltm (>= 0.9-7), RColorBrewer (>= 1.0.5), rrBLUP (>= 3.8), plyr (>= 1.7.1), mail(>= 1.0), rjson(>= 0.2.12), agricolae (>= 1.2-1),  gtools (>= 2.6.2), gdata (>= 2.8.2), bitops (>= 1.0-4.1), caTools (>= 1.13), KernSmooth (>= 2.23-7), msm (>= 1.1.1), mvtnorm (>= 0.9.9992), polycor (>= 0.7-8), sfsmisc (>= 1.0-24), nlme (>= 3.1-103), irlba (>= 1.0.3), lme4 (>= 1.1-7), randomForest (>= 4.6-10), data.table (>= 1.9.6)
-#RUN R -e "install.packages('qtl', dependencies=TRUE, repos='http://cran.rstudio.com/')" \
-#	&& R -e "install.packages('randomForest', dependencies=TRUE, repos='http://cran.rstudio.com/')" \
-#	&& R -e "install.packages('lme4', dependencies=TRUE, repos='http://cran.rstudio.com/')" \
-#	&& R -e "install.packages('irlba', dependencies=TRUE, repos='http://cran.rstudio.com/')" \
-#	&& R -e "install.packages('nlme', dependencies=TRUE, repos='http://cran.rstudio.com/')" \
-#	&& R -e "install.packages('sfsmisc', dependencies=TRUE, repos='http://cran.rstudio.com/')" \
-#	&& R -e "install.packages('polycor', dependencies=TRUE, repos='http://cran.rstudio.com/')" \
-#	&& R -e "install.packages('mvtnorm', dependencies=TRUE, repos='http://cran.rstudio.com/')" \
-#	&& R -e "install.packages('msm', dependencies=TRUE, repos='http://cran.rstudio.com/')" \
-#	&& R -e "install.packages('KernSmooth', dependencies=TRUE, repos='http://cran.rstudio.com/')" \
-#	&& R -e "install.packages('caTools', dependencies=TRUE, repos='http://cran.rstudio.com/')" \
-#	&& R -e "install.packages('bitops', dependencies=TRUE, repos='http://cran.rstudio.com/')" \
-#	&& R -e "install.packages('gdata', dependencies=TRUE, repos='http://cran.rstudio.com/')" \
-#	&& R -e "install.packages('gtools', dependencies=TRUE, repos='http://cran.rstudio.com/')" \
-#	&& R -e "install.packages('rjson', dependencies=TRUE, repos='http://cran.rstudio.com/')" \
-#	&& R -e "install.packages('mail', dependencies=TRUE, repos='http://cran.rstudio.com/')" \
-#	&& R -e "install.packages('plyr', dependencies=TRUE, repos='http://cran.rstudio.com/')" \
-#	&& R -e "install.packages('rrBLUP', dependencies=TRUE, repos='http://cran.rstudio.com/')" \
-#	&& R -e "install.packages('RColorBrewer', dependencies=TRUE, repos='http://cran.rstudio.com/')" \
-#	&& R -e "install.packages('ltm', dependencies=TRUE, repos='http://cran.rstudio.com/')" \
-#	&& R -e "install.packages('gplots', dependencies=TRUE, repos='http://cran.rstudio.com/')" \
-#	&& R -e "install.packages('data.table', dependencies=TRUE, repos='http://cran.rstudio.com/')" \
-#	&& R -e "install.packages('agricolae', dependencies=TRUE, repos='http://cran.rstudio.com/')" \
-#	&& R -e "install.packages('d3heatmap', dependencies=TRUE, repos='http://cran.rstudio.com/')" \
-#	&& R -e "install.packages('tidyr', dependencies=TRUE, repos='http://cran.rstudio.com/')" \
-#	&& R -e "install.packages('ggplot2', dependencies=TRUE, repos='http://cran.rstudio.com/')"
+RUN R -e "install.packages('qtl', dependencies=TRUE, repos='http://cran.rstudio.com/')" \
+	&& R -e "install.packages('randomForest', dependencies=TRUE, repos='http://cran.rstudio.com/')" \
+	&& R -e "install.packages('lme4', dependencies=TRUE, repos='http://cran.rstudio.com/')" \
+	&& R -e "install.packages('irlba', dependencies=TRUE, repos='http://cran.rstudio.com/')" \
+	&& R -e "install.packages('nlme', dependencies=TRUE, repos='http://cran.rstudio.com/')" \
+	&& R -e "install.packages('sfsmisc', dependencies=TRUE, repos='http://cran.rstudio.com/')" \
+	&& R -e "install.packages('polycor', dependencies=TRUE, repos='http://cran.rstudio.com/')" \
+	&& R -e "install.packages('mvtnorm', dependencies=TRUE, repos='http://cran.rstudio.com/')" \
+	&& R -e "install.packages('msm', dependencies=TRUE, repos='http://cran.rstudio.com/')" \
+	&& R -e "install.packages('KernSmooth', dependencies=TRUE, repos='http://cran.rstudio.com/')" \
+	&& R -e "install.packages('caTools', dependencies=TRUE, repos='http://cran.rstudio.com/')" \
+	&& R -e "install.packages('bitops', dependencies=TRUE, repos='http://cran.rstudio.com/')" \
+	&& R -e "install.packages('gdata', dependencies=TRUE, repos='http://cran.rstudio.com/')" \
+	&& R -e "install.packages('gtools', dependencies=TRUE, repos='http://cran.rstudio.com/')" \
+	&& R -e "install.packages('rjson', dependencies=TRUE, repos='http://cran.rstudio.com/')" \
+	&& R -e "install.packages('mail', dependencies=TRUE, repos='http://cran.rstudio.com/')" \
+	&& R -e "install.packages('plyr', dependencies=TRUE, repos='http://cran.rstudio.com/')" \
+	&& R -e "install.packages('rrBLUP', dependencies=TRUE, repos='http://cran.rstudio.com/')" \
+	&& R -e "install.packages('RColorBrewer', dependencies=TRUE, repos='http://cran.rstudio.com/')" \
+	&& R -e "install.packages('ltm', dependencies=TRUE, repos='http://cran.rstudio.com/')" \
+	&& R -e "install.packages('gplots', dependencies=TRUE, repos='http://cran.rstudio.com/')" \
+	&& R -e "install.packages('data.table', dependencies=TRUE, repos='http://cran.rstudio.com/')" \
+	&& R -e "install.packages('agricolae', dependencies=TRUE, repos='http://cran.rstudio.com/')" \
+	&& R -e "install.packages('d3heatmap', dependencies=TRUE, repos='http://cran.rstudio.com/')" \
+	&& R -e "install.packages('tidyr', dependencies=TRUE, repos='http://cran.rstudio.com/')" \
+	&& R -e "install.packages('ggplot2', dependencies=TRUE, repos='http://cran.rstudio.com/')"
 
 # Install Legacy NCBI Blast
 RUN cd /cxgn/ \
@@ -123,6 +120,7 @@ RUN ln -s /cxgn/starmachine/bin/starmachine_init.d /etc/init.d/sgn
 #/etc/init.d/sgn start
 RUN mkdir /tmp/SGN-site
 RUN chown -R www-data:www-data /tmp/SGN-site
+RUN mv /cxgn/sgn/sgn_loc.conf /cxgn/sgn/sgn_local.conf
 
 CMD sed -i s/peer/trust/ /etc/postgresql/9.6/main/pg_hba.conf \
     && service postgresql restart \
@@ -132,7 +130,3 @@ CMD sed -i s/peer/trust/ /etc/postgresql/9.6/main/pg_hba.conf \
     && createdb -U postgres -E UTF8 -T template0 fixture \
     && psql -U postgres -d fixture -f /cxgn/fixture/cxgn_fixture.sql \
     && service sgn start
-
-# Run sgn server when the container launches
-#CMD ["perl", "bin/sgn_server.pl -r --fork -p 3000"]
-#CMD cd /cxgn/sgn/ && perl bin/sgn_server.pl -r --fork -p 3000
