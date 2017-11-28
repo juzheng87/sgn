@@ -135,6 +135,8 @@ sub search {
     my $rep_type_id = SGN::Model::Cvterm->get_cvterm_row($schema, 'replicate', 'stock_property')->cvterm_id();
     my $block_number_type_id = SGN::Model::Cvterm->get_cvterm_row($schema, 'block', 'stock_property')->cvterm_id();
     my $plot_number_type_id = SGN::Model::Cvterm->get_cvterm_row($schema, 'plot number', 'stock_property')->cvterm_id();
+    my $row_number_type_id = SGN::Model::Cvterm->get_cvterm_row($schema, 'row_number', 'stock_property')->cvterm_id();
+    my $col_number_type_id = SGN::Model::Cvterm->get_cvterm_row($schema, 'col_number', 'stock_property')->cvterm_id();
     my $year_type_id = SGN::Model::Cvterm->get_cvterm_row($schema, 'project year', 'project_property')->cvterm_id();
     my $design_type_id = SGN::Model::Cvterm->get_cvterm_row($schema, 'design', 'project_property')->cvterm_id();
     my $plot_type_id = SGN::Model::Cvterm->get_cvterm_row($schema, 'plot', 'stock_type')->cvterm_id();
@@ -174,19 +176,17 @@ sub search {
           LEFT JOIN stockprop AS rep ON (stock.stock_id=rep.stock_id AND rep.type_id = $rep_type_id)
           LEFT JOIN stockprop AS block_number ON (stock.stock_id=block_number.stock_id AND block_number.type_id = $block_number_type_id)
           LEFT JOIN stockprop AS plot_number ON (stock.stock_id=plot_number.stock_id AND plot_number.type_id = $plot_number_type_id)
+          LEFT JOIN stockprop AS row_number ON (stock.stock_id=row_number.stock_id AND row_number.type_id = $row_number_type_id)
+          LEFT JOIN stockprop AS col_number ON (stock.stock_id=col_number.stock_id AND col_number.type_id = $col_number_type_id)
           JOIN phenotype USING(phenotype_id)",
     );
 
-    my $select_clause;
-    if ($self->include_design_info){
-        $select_clause = "SELECT ".$columns{'year_id'}.", ".$columns{'trial_name'}.", ".$columns{'accession_name'}.", ".$columns{'location_name'}.", ".$columns{'trait_name'}.", ".$columns{'phenotype_value'}.", ".$columns{'plot_name'}.", rep.value, block_number.value, plot_number.value, ".$columns{'trait_id'}.", ".$columns{'trial_id'}.", ".$columns{'location_id'}.", ".$columns{'accession_id'}.", ".$columns{'plot_id'}.", phenotype.uniquename, ".$columns{'trial_design'}.", ".$columns{'plot_type'}.", phenotype.phenotype_id, count(phenotype.phenotype_id) OVER() AS full_count";
-    } else {
-        $select_clause = "SELECT ".$columns{'trial_name'}.", ".$columns{'accession_name'}.", ".$columns{'location_name'}.", ".$columns{'trait_name'}.", ".$columns{'phenotype_value'}.", ".$columns{'plot_name'}.", ".$columns{'trait_id'}.", ".$columns{'trial_id'}.", ".$columns{'location_id'}.", ".$columns{'accession_id'}.", ".$columns{'plot_id'}.", phenotype.uniquename, ".$columns{'plot_type'}.", phenotype.phenotype_id, count(phenotype.phenotype_id) OVER() AS full_count";
-    }
+    my $select_clause = "SELECT ".$columns{'year_id'}.", ".$columns{'trial_name'}.", ".$columns{'accession_name'}.", ".$columns{'location_name'}.", ".$columns{'trait_name'}.", ".$columns{'phenotype_value'}.", ".$columns{'plot_name'}.",
+          rep.value, block_number.value, plot_number.value, row_number.value, col_number.value, ".$columns{'trait_id'}.", ".$columns{'trial_id'}.", ".$columns{'location_id'}.", ".$columns{'accession_id'}.", ".$columns{'plot_id'}.", phenotype.uniquename, ".$columns{'trial_design'}.", ".$columns{'plot_type'}.", phenotype.phenotype_id, count(phenotype.phenotype_id) OVER() AS full_count";
 
     my $from_clause = $columns{'from_clause'};
 
-    my $order_clause = " ORDER BY 2,7,19 DESC";
+    my $order_clause = " ORDER BY 2,7,21 DESC";
 
     my @where_clause;
 
@@ -261,32 +261,19 @@ sub search {
     $h->execute();
     my $result = [];
 
-    if ($self->include_design_info){
-        while (my ($year, $project_name, $stock_name, $location, $trait, $value, $plot_name, $rep, $block_number, $plot_number, $trait_id, $project_id, $location_id, $stock_id, $plot_id, $phenotype_uniquename, $design, $stock_type_name, $phenotype_id, $full_count) = $h->fetchrow_array()) {
-            my $timestamp_value;
-            if ($include_timestamp) {
-                my ($p1, $p2) = split /date: /, $phenotype_uniquename;
-                my ($timestamp, $p3) = split /  operator/, $p2;
-                if( $timestamp =~ m/(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})(\S)(\d{4})/) {
-                    $timestamp_value = $timestamp;
-                }
-            }
-            my $synonyms = $synonym_hash_lookup{$stock_name};
-            push @$result, [ $year, $project_name, $stock_name, $location, $trait, $value, $plot_name, $rep, $block_number, $plot_number, $trait_id, $project_id, $location_id, $stock_id, $plot_id, $timestamp_value, $synonyms, $design, $stock_type_name, $phenotype_id, $full_count ];
-        }
-    } else {
-        while (my ($project_name, $stock_name, $location, $trait, $value, $plot_name, $trait_id, $project_id, $location_id, $stock_id, $plot_id, $phenotype_uniquename, $stock_type_name, $phenotype_id, $full_count) = $h->fetchrow_array()) {
-            my $timestamp_value;
-            if ($include_timestamp) {
-                my ($p1, $p2) = split /date: /, $phenotype_uniquename;
-                my ($timestamp, $p3) = split /  operator/, $p2;
-                if( $timestamp =~ m/(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})(\S)(\d{4})/) {
-                    $timestamp_value = $timestamp;
-                }
+    while (my ($year, $project_name, $stock_name, $location, $trait, $value, $plot_name, $rep, $block_number, $plot_number, $row_number, $col_number, $trait_id, $project_id, $location_id, $stock_id, $plot_id, $phenotype_uniquename, $design, $stock_type_name, $phenotype_id, $full_count) = $h->fetchrow_array()) {
+        my $timestamp_value;
+        if ($include_timestamp) {
+            my ($p1, $p2) = split /date: /, $phenotype_uniquename;
+            my ($timestamp, $p3) = split /  operator/, $p2;
+            if( $timestamp =~ m/(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})(\S)(\d{4})/) {
+                $timestamp_value = $timestamp;
             }
             my $synonyms = $synonym_hash_lookup{$stock_name};
             push @$result, [ $project_name, $stock_name, $location, $trait, $value, $plot_name, $trait_id, $project_id, $location_id, $stock_id, $plot_id, $timestamp_value, $synonyms, $stock_type_name, $phenotype_id, $full_count ];
         }
+        my $synonyms = $synonym_hash_lookup{$stock_name};
+        push @$result, [ $year, $project_name, $stock_name, $location, $trait, $value, $plot_name, $rep, $block_number, $plot_number, $row_number, $col_number, $trait_id, $project_id, $location_id, $stock_id, $plot_id, $timestamp_value, $synonyms, $design, $stock_type_name, $phenotype_id, $full_count ];
     }
 
     print STDERR "Search End:".localtime."\n";
