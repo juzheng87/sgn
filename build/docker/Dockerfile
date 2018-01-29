@@ -38,8 +38,8 @@ RUN apt-get install apt-transport-https -y \
     && apt-get install -y libnlopt-dev
 # Install R packages
 #qtl (>= 1.24-9), gplots (>= 2.10.1), ltm (>= 0.9-7), RColorBrewer (>= 1.0.5), rrBLUP (>= 3.8), plyr (>= 1.7.1), mail(>= 1.0), rjson(>= 0.2.12), agricolae (>= 1.2-1),  gtools (>= 2.6.2), gdata (>= 2.8.2), bitops (>= 1.0-4.1), caTools (>= 1.13), KernSmooth (>= 2.23-7), msm (>= 1.1.1), mvtnorm (>= 0.9.9992), polycor (>= 0.7-8), sfsmisc (>= 1.0-24), nlme (>= 3.1-103), irlba (>= 1.0.3), lme4 (>= 1.1-7), randomForest (>= 4.6-10), data.table (>= 1.9.6)
-RUN R -e "R -e "install.packages('devtools', dependencies=TRUE, repos='http://cran.rstudio.com/')" \
-    && install.packages('qtl', dependencies=TRUE, repos='http://cran.rstudio.com/')" \
+RUN R -e "install.packages('devtools', dependencies=TRUE, repos='http://cran.rstudio.com/')" \
+    && R -e "install.packages('qtl', dependencies=TRUE, repos='http://cran.rstudio.com/')" \
 	&& R -e "install.packages('randomForest', dependencies=TRUE, repos='http://cran.rstudio.com/')" \
 	&& R -e "install.packages('lme4', dependencies=TRUE, repos='http://cran.rstudio.com/')" \
 	&& R -e "install.packages('irlba', dependencies=TRUE, repos='http://cran.rstudio.com/')" \
@@ -76,7 +76,7 @@ RUN R -e "R -e "install.packages('devtools', dependencies=TRUE, repos='http://cr
 RUN cd /cxgn/ \
 	&& mkdir blast \
 	&& cd /cxgn/blast/ \
-	&& wget ftp://ftp.ncbi.nlm.nih.gov/blast/executables/legacy/2.2.9/blast-2.2.9-amd64-linux.tar.gz \
+	&& wget http://ftp.gen-info.osaka-u.ac.jp/pub/biosoft/blast/executables/release/2.2.9/blast-2.2.9-amd64-linux.tar.gz \
 	&& tar zxvpf blast-2.2.9-amd64-linux.tar.gz \
 	&& rm blast-2.2.9-amd64-linux.tar.gz
 ENV PATH $PATH:/cxgn/blast/
@@ -102,7 +102,7 @@ RUN curl -L https://cpanmin.us | perl - --sudo App::cpanminus \
 	&& apt-get install -y libgd2-xpm-dev libcairo2-dev libpq-dev libxml-libxml-perl \
 	&& cpanm install -L /cxgn/local-lib/ local::lib Catalyst::ScriptRunner Catalyst::Restarter HTML::Mason::Interp Selenium::Remote::Driver DBI Hash::Merge DBIx::Connector Catalyst::Plugin::Authorization::Roles Bio::PrimarySeq Class::DBI Tie::UrlEncoder Data::BitMask enum File::NFSLock Class::MethodMaker Bio::BLAST::Database Catalyst::Plugin::SmartURI Modern::Perl List::Compare Cache::File Config::JFDI CatalystX::GlobalContext --force DBIx::Class::Schema Bio::Chado::Schema Array::Utils JSON::Any Math::Round Math::Round::Var Catalyst::View::Email Catalyst::View::HTML::Mason Catalyst::View::Bio::SeqIO Catalyst::View::JavaScript::Minifier::XS@2.101001 Catalyst::View::Download::CSV URI::FromHash JSAN::ServerSide Config::INI::Reader Bio::GFF3::LowLevel Statistics::Descriptive String::Random MooseX::FollowPBP GD Tie::Function Digest::Crc32 Barcode::Code128 Math::Base36 Captcha::reCAPTCHA Test::Aggregate::Nested --force HTML::FormFu SVG IPC::Run3 Spreadsheet::WriteExcel MooseX::Object::Pluggable R::YapRI::Base PDF::Create String::CRC Algorithm::Combinatorics Catalyst::Controller::HTML::FormFu String::Approx Cairo Chart::Clicker Spreadsheet::ParseExcel MooseX::Types::URI Bio::Graphics::FeatureFile --force Mail::Sendmail Array::Compare GD::Graph::lines GD::Graph::Map Bio::GMOD::GenericGenePage Number::Bytes::Human AnyEvent --force IO::Event --force File::Flock Graph Bio::SeqFeature::Annotated XML::Twig XML::Generator DBD::Pg MooseX::Runnable@0.09 XML::Feed Parse::Deb::Control Bio::GMOD::Blast::Graph Catalyst::DispatchType::Regex DateTime::Format::Flexible DateTime::Format::Pg HTML::TreeBuilder::XPath JSON::XS Lingua::EN::Inflect List::AllUtils MooseX::Declare MooseX::Singleton SOAP::Transport::HTTP Test::Class WWW::Mechanize::TreeBuilder Data::UUID HTML::Lint --force Test::JSON Test::MockObject Test::WWW::Selenium Sort::Versions Term::ReadKey --force Spreadsheet::Read Sort::Maker Term::Size::Any Proc::ProcessTable URI::Encode Archive::Zip Statistics::R Lucy::Simple DBIx::Class::Schema::Loader Text::CSV Imager::QRCode GD::Barcode::QRcode LWP::UserAgent Set::Product Server::Starter Net::Server::SS::PreFork --force Catalyst::Plugin::Assets --force PDF::API2 CAM::PDF
 
-RUN mkdir /export && mkdir /export/prod && mkdir /export/prod/public && mkdir /export/prod/public/sgn_static_content && mkdir /export/prod/tmp && mkdir /export/prod/tmp/solgs && mkdir /data && mkdir /data/prod && mkdir /data/prod/archive && mkdir /export/prod/public/images && mkdir /export/prod/public/images/image_files && mkdir /data/shared && mkdir /data/shared/tmp && mkdir /var/log/solbase && chown -R docker:docker /data/prod/ && chown -R docker:docker /export/prod/ && mkdir /etc/starmachine
+RUN mkdir /export && mkdir /export/prod && mkdir /export/prod/public && mkdir /export/prod/public/sgn_static_content && mkdir /export/prod/tmp && mkdir /export/prod/tmp/solgs && mkdir /data && mkdir /data/prod && mkdir /data/prod/archive && mkdir /export/prod/public/images && mkdir /export/prod/public/images/image_files && mkdir /data/shared && mkdir /data/shared/tmp && mkdir /var/log/solbase && chown -R www-data:www-data /data/prod/ && chown -R www-data:www-data /export/prod/ && mkdir /etc/starmachine
 
 RUN cp /config/starmachine.conf /etc/starmachine
 RUN cp /config/sgn_loc.conf /cxgn/sgn
@@ -126,7 +126,7 @@ RUN mkdir /tmp/SGN-site
 RUN chown -R www-data:www-data /tmp/SGN-site
 RUN mv /cxgn/sgn/sgn_loc.conf /cxgn/sgn/sgn_local.conf
 
-CMD sed -i s/peer/trust/ /etc/postgresql/9.6/main/pg_hba.conf \
+CMD sed -i s/peer/trust/ /etc/postgresql/10/main/pg_hba.conf \
     && service postgresql restart \
     && yes web_usr | createuser -U postgres -P web_usr \
     && echo "ALTER ROLE postgres WITH PASSWORD 'postgres';" | psql -U postgres \
